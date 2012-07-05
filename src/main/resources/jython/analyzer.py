@@ -79,7 +79,7 @@ class ResponseTimeGroupHandler:
     _totalTxPassMap = None  # key: tx name
                             # value: total passed tx's for all response time values
     _testNumColumn = ""
-    
+
     def __init__(self, txNumNameMap):
         self._totalTxPassed = 0
         self._txNumberNameMap = txNumNameMap
@@ -98,7 +98,7 @@ class ResponseTimeGroupHandler:
         The analyzer plugin has previously been set up with the summary data
         at the end of the grinder out_ file.  Here, we add the additional
         time group info to the existing report rows.
-        
+
         """
         transactionNames=self._responseTimeGroups.keys()
         rtgroupNames = analyzerPlugin.getRtgroupColumnNames()
@@ -174,7 +174,7 @@ class ResponseTimeGroupHandler:
         for txName in self._responseTimeGroups.keys():
             logger.debug("tx %s, time groups: %s" %(txName, self._responseTimeGroups[txName]))
 
-    
+
 
 
 
@@ -198,9 +198,9 @@ class ClientLogAnalyzer:
     maxElapsedTime = None
     _summaryData = None # maps transaction numbers to transaction names
     rtimeGroupHandler = None
-    
+
     def __init__(self, dataFiles, summaryData, agents):
-        self.dataFiles = dataFiles       
+        self.dataFiles = dataFiles
         self._summaryData = summaryData
         self._agentMultiplier = agents
         self._setTestStartTime_(dataFiles[0])
@@ -221,7 +221,7 @@ class ClientLogAnalyzer:
         logger.debug("DEBUG: start time = " + str(TEST_START_TIME))
 
     def _setTestDuration_(self, grinderDataFile):
-        ''' Determine the duration of the test by reading the timestamps 
+        ''' Determine the duration of the test by reading the timestamps
         from the first and last lines of the data files. '''
         maxElapsedTime=long(0)
         elapsedTime = 0
@@ -241,11 +241,11 @@ class ClientLogAnalyzer:
         #        size and tail more lines for larger files.
         maxElapsedTime = long(maxElapsedTime * 1.00) # add a 1% safety factor
         self.maxElapsedTime = maxElapsedTime - TEST_START_TIME
-        logger.debug("DEBUG: Max elapsed time == " + str(self.maxElapsedTime))        
-        
+        logger.debug("DEBUG: Max elapsed time == " + str(self.maxElapsedTime))
+
     def _analyzeLogs(self):
         '''  Analyzes grinder agent logs.  Builds the list of buckets. '''
-        # build an empty list of buckets       
+        # build an empty list of buckets
         self.bucketList=[]
         for i in range(CONFIG.buckets+1):
             bucket = ga.bucket.getBucket(i * self.msPerBucket, (i+1) * self.msPerBucket, self)
@@ -260,7 +260,7 @@ class ClientLogAnalyzer:
             line = input.readline() # now we have first "data" line
             while line != "":
                 data = line.split( "," )
-                elapsed_time_word = data[ELAPSED_TIME_COLUMN].strip() 
+                elapsed_time_word = data[ELAPSED_TIME_COLUMN].strip()
                 elapsedTime = long(elapsed_time_word) - TEST_START_TIME
                 # do we need a new bucket?
                 # TODO -- what if one line is grossly out of chronological order?
@@ -278,7 +278,7 @@ class ClientLogAnalyzer:
         if CONFIG.isUseThresholds():
             self.rtimeGroupHandler.addRTGroupsToReport(VORPAL.getPlugin("analyzer"))
         self.rtimeGroupHandler.printSummaryData()
-    
+
     def getAgentMultiplier(self):
         return self._agentMultiplier
 
@@ -353,15 +353,15 @@ class ClientLogAnalyzer:
 class SummaryDataRegistry:
     """
     Container for the summary data at the end of the grinder out_ file.
-    
+
     """
     lineNameMap = None
     txNumNameMap = None
-    
+
     def __init__(self, outFile):
         """
         Loads everything from the out file.  Filters out duplicate names.
-        
+
         """
         self.txNumNameMap = {}
         self.lineNameMap = {} # key: data line, val: tx name
@@ -381,7 +381,7 @@ class SummaryDataRegistry:
                 test number/name mappings found."""
             logger.fatal(msg)
             sys.exit(1)
-            
+
         duplicateTxNames = self._getListDuplicates(self.lineNameMap.values())
         if len(duplicateTxNames) > 0:
             logger.info("Duplicate transaction names found: %s" %duplicateTxNames)
@@ -397,14 +397,14 @@ class SummaryDataRegistry:
 
     def _getTxNum(self, line):
         return line.split( " " )[1] # test number is 2nd column
-    
+
     def _getInitialTxName(self, line):
         return line.split( '"' )[1]   # test names appear in quotes
-    
+
     def _getListDuplicates(self, list):
         """
         Returns a subset of list containing items that appear more than once
-        
+
         """
         itemCountMap = {}
         for item in list:
@@ -414,17 +414,17 @@ class SummaryDataRegistry:
                 itemCountMap[item] = 1
         # list comprehension, w00t
         return [ key for key in itemCountMap.keys() if itemCountMap[key] > 1]
- 
+
     def getTxNumNameMap(self):
         return self.txNumNameMap
-    
+
     def getTestDataLines(self):
         return self.lineNameMap.keys()
-    
+
     def getTxName(self, line):
         return self.lineNameMap[line]
 
-    
+
 
 #####################################################################
 # End of class definitions.  Module logic below
@@ -433,7 +433,7 @@ class SummaryDataRegistry:
 def usage():
     logger.fatal('Usage: analyzer.py "<grinder data Files>" <grinder out file> [number of agents]')
     sys.exit()
-   
+
 def getAgentCount():
     return len (grinderDataFiles)
 
@@ -456,47 +456,47 @@ def main():
     grinderOutFiles = []        # grinder out files list
 
     # upload grinder data and out files from the local directory target/test/log_files
-    log_dir = "target/test/log_files"  # directorio de los ficheros generados por el agent
-    log_files = os.listdir(log_dir)                
+    log_dir = "target/grinder/log_files"  # directorio de los ficheros generados por el agent
+    log_files = os.listdir(log_dir)
     for filename in log_files:
         log_file = "%s/%s" % (log_dir, filename)
         position = re.search('[0-9]+', filename)
-        n = int(position.group(0)) 
+        n = int(position.group(0))
         if filename.find("data.log") != -1:
-#           Don't upload grinder data files with less than CONFIG.buckets datas lines 
-#           if tail (log_file, CONFIG.buckets+1, ignoreBlankLines=True).__len__() < CONFIG.buckets :  
+#           Don't upload grinder data files with less than CONFIG.buckets datas lines
+#           if tail (log_file, CONFIG.buckets+1, ignoreBlankLines=True).__len__() < CONFIG.buckets :
 #                logger.fatal("")
 #                logger.fatal( "FATAL: insufficient test data to graph. ")
 #                logger.fatal( "grinderplugin/src/main/resources/jython.conf/analyzer.properties specifies")
 #                logger.fatal( "       " + str(CONFIG.buckets) + " buckets, but " + filename + " contains")
 #                logger.fatal( "       less than " + str(CONFIG.buckets) + " data points.")
 #                sys.exit(1)
-                grinderDataFiles[n:n] = (log_file,)      
+                grinderDataFiles[n:n] = (log_file,)
                 print "data_ file %d was uploaded..." % (n)
         elif filename.startswith("error"): None
-        else:    
-            grinderOutFiles[n:n] = (log_file,)   
-            print "out_ file %d was uploaded..." % (n) 
+        else:
+            grinderOutFiles[n:n] = (log_file,)
+            print "out_ file %d was uploaded..." % (n)
     print ""
     if len(grinderDataFiles) != len(grinderOutFiles):
         logger.fatal("")
-        logger.fatal("FATAL: The total number of data files and out files not match")    
-        sys.exit(1)  
-    
-    logger.info("Grinder data files specified: %d\n" %grinderDataFiles.__len__())       
-	
+        logger.fatal("FATAL: The total number of data files and out files not match")
+        sys.exit(1)
+
+    logger.info("Grinder data files specified: %d\n" %grinderDataFiles.__len__())
+
     for i in range(len(grinderDataFiles)):
         print "---------------------------------------------------------------"
         print "|      Creating HTML report of data_ and out_ files %d       |" % (i)
         print "---------------------------------------------------------------"
-        summaryData = SummaryDataRegistry(grinderOutFiles[i])   
-        
+        summaryData = SummaryDataRegistry(grinderOutFiles[i])
+
         # generate HTML report
         reportDir = "%s_%d" % (CONFIG.reportDir, i)
-        
+
         reporter = ga.report.getReporter(grinderOutFiles[i], summaryData)
         reporter.readGrinderOutFile(summaryData, reportDir)
-        
+
         # generate the graphs
         agents=1
         analyzer = ClientLogAnalyzer(grinderDataFiles, summaryData, agents)
@@ -518,7 +518,7 @@ def main():
                                             transactionName,
                                             TEST_START_TIME)
             rtGrapher.saveChartToDisk(reportDir)
-        
+
         reporter.writeReportToFile(i, reportDir)
     logger.warn ("Log file analysis completed successfully.")
 
@@ -533,7 +533,7 @@ TEST_NUMBER_COLUMN=2       # which test is this data for
 RESPONSE_TIME_COLUMN=4     # no. of ms for server to respond
 ERRORS_COLUMN=5            # did the transaction succeed?
 BYTES_COLUMN=7             # if success, how many bytes in body?
-RESOLVE_TIME_COLUMN=9      # 
+RESOLVE_TIME_COLUMN=9      #
 CONNECT_TIME_COLUMN=10     #
 FIRST_BYTE_TIME_COLUMN=11  #
 
