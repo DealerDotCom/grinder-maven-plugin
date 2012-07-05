@@ -42,6 +42,8 @@ from org.jfree.chart.title import TextTitle
 from org.jtmb.grinderAnalyzer import ReportRow ###
 from org.jtmb.grinderAnalyzer import Columns
 
+from com.fides import GrinderPropertiesConfigure
+
 # python imports
 
 import os
@@ -456,7 +458,7 @@ def main():
     grinderOutFiles = []        # grinder out files list
 
     # upload grinder data and out files from the local directory target/test/log_files
-    log_dir = "target/grinder/log_files"  # directorio de los ficheros generados por el agent
+    log_dir = GrinderPropertiesConfigure.LOG_DIRECTORY # directorio de los ficheros generados por el agent
     log_files = os.listdir(log_dir)
     for filename in log_files:
         log_file = "%s/%s" % (log_dir, filename)

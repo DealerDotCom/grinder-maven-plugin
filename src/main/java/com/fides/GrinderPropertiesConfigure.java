@@ -58,16 +58,16 @@ public abstract class GrinderPropertiesConfigure extends AbstractMojo {
 	private static final long DEFAULT_DAEMON_PERIOD = 60000;
 
 	// local configuration directory
-	private static final String CONFIG = "target/grinder/config";
+	public static final String CONFIG = "target/grinder/config";
 
 	// local grinder properties directory
-	private static final String PATH_PROPERTIES_DIR = "src/grinder/config";
+	public static final String PATH_PROPERTIES_DIR = "src/grinder/config";
 
 	// local log directory
-	private static final String LOG_DIRECTORY = "target/grinder/log_files";
+	public static final String LOG_DIRECTORY = "target/grinder/log_files";
 
 	// local tcpproxy directory
-	private static final String TCP_PROXY_DIRECTORY = "target/grinder/tcpproxy";
+	public static final String TCP_PROXY_DIRECTORY = "target/grinder/tcpproxy";
 
 	// grinder properties
 	private Properties propertiesPlugin = new Properties();
