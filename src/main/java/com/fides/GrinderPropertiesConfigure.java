@@ -23,15 +23,22 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.execution.MavenSession;
+import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.project.MavenProject;
+import org.apache.maven.shared.filtering.MavenFilteringException;
+import org.apache.maven.shared.filtering.MavenResourcesExecution;
+import org.apache.maven.shared.filtering.MavenResourcesFiltering;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,16 +58,16 @@ public abstract class GrinderPropertiesConfigure extends AbstractMojo {
 	private static final long DEFAULT_DAEMON_PERIOD = 60000;
 
 	// local configuration directory
-	private static final String CONFIG = "target/test/config";
+	private static final String CONFIG = "target/grinder/config";
 
 	// local grinder properties directory
-	private static final String PATH_PROPERTIES_DIR = "src/test/config";
+	private static final String PATH_PROPERTIES_DIR = "src/grinder/config";
 
 	// local log directory
-	private static final String LOG_DIRECTORY = "target/test/log_files";
+	private static final String LOG_DIRECTORY = "target/grinder/log_files";
 
 	// local tcpproxy directory
-	private static final String TCP_PROXY_DIRECTORY = "target/test/tcpproxy";
+	private static final String TCP_PROXY_DIRECTORY = "target/grinder/tcpproxy";
 
 	// grinder properties
 	private Properties propertiesPlugin = new Properties();
@@ -94,7 +101,6 @@ public abstract class GrinderPropertiesConfigure extends AbstractMojo {
 	 * The grinder properties file path defined in the pom.xml file of Maven project.
 	 *
 	 * @parameter
-	 * @required
 	 */
 	private String path;
 
@@ -126,6 +132,50 @@ public abstract class GrinderPropertiesConfigure extends AbstractMojo {
 	 * @parameter expression="${plugin.artifacts}"
 	 */
 	private List<Artifact> pluginArtifacts;
+
+	/**
+	 * @component role="org.apache.maven.shared.filtering.MavenResourcesFiltering" role-hint="default"
+	 * @required
+	 */
+	private MavenResourcesFiltering mavenResourcesFiltering;
+
+	/**
+	 * The character encoding scheme to be applied when filtering resources.
+	 *
+	 * @parameter expression="${encoding}" default-value="${project.build.sourceEncoding}"
+	 */
+	private String encoding;
+
+	/**
+	 * @parameter default-value="${project}"
+	 * @required
+	 * @readonly
+	 */
+	private MavenProject mavenProject;
+
+	/**
+	 * @parameter default-value="${session}"
+	 * @readonly
+	 * @required
+	 */
+	private MavenSession mavenSession;
+
+	/**
+	 * The list of additional filter properties files to be used along with System and project
+	 * properties, which would be used for the filtering.
+	 * <br/>
+	 * See also: {@link org.apache.maven.plugin.resources.ResourcesMojo#filters}.
+	 *
+	 * @parameter default-value="${project.build.filters}"
+	 * @readonly
+	 * @since 2.4
+	 */
+	private List<?> buildFilters;
+
+	/**
+	 * @parameter default-value="true"
+	 */
+	private boolean filteringEnabled;
 
 	public List<Artifact> getPluginArtifacts() {
 		return pluginArtifacts;
@@ -358,7 +408,8 @@ public abstract class GrinderPropertiesConfigure extends AbstractMojo {
 		// load grinder properties from the grinder properties file
 		FileInputStream is = null;
 		try {
-			is = new FileInputStream(pathProperties);
+			final File filteredFile = (filteringEnabled) ? filterGrinderPropertiesFile(pathProperties) : new File(pathProperties);
+			is = new FileInputStream(filteredFile);
 			propertiesPlugin.load(is);
 		} catch (final FileNotFoundException e) {
 			if(logger.isDebugEnabled()){
@@ -372,6 +423,8 @@ public abstract class GrinderPropertiesConfigure extends AbstractMojo {
 				logger.error(" set into your POM file do not exists! ");
 				System.exit(0);
 			}
+		} catch (final MavenFilteringException e) {
+			logger.error("Unable to load Grinder properties file.", e);
 		} catch (final IOException e) {
 			logger.error("Unable to load Grinder properties file.", e);
 		} finally {
@@ -563,5 +616,27 @@ public abstract class GrinderPropertiesConfigure extends AbstractMojo {
 		initAgentOption();
 
 		initConfigurationDirectory();
+	}
+
+	/**
+	 * Filters the selected Grinder properties file, replacing variable place-holders with their
+	 * associated values found in the project's pom.xml file.
+	 * @param grinderProperteisFile The path to the selected Grinder properties file as a String.
+	 * @return The filtered Grinder properties file.
+	 * @throws MavenFilterException if unable to filter the properties file.
+	 */
+	private File filterGrinderPropertiesFile(final String grinderPropertiesFile) throws MavenFilteringException {
+		final File propertiesFile = new File(grinderPropertiesFile);
+		final Resource resource = new Resource();
+		resource.setDirectory(propertiesFile.getParent());
+		resource.setFiltering(true);
+		resource.setIncludes(Collections.singletonList("**/*.properties"));
+
+		final MavenResourcesExecution mavenResourcesExecution = new MavenResourcesExecution ( Collections.singletonList(resource), new File(CONFIG), mavenProject,
+				encoding, buildFilters,
+				Collections.EMPTY_LIST, mavenSession );
+
+		mavenResourcesFiltering.filterResources( mavenResourcesExecution );
+		return new File(CONFIG, propertiesFile.getName());
 	}
 }
