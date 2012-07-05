@@ -4,3 +4,10 @@
 *.jar
 *.war
 *.ear
+
+# Eclipse files
+.classpath
+.project
+.pydevproject
+.settings
+target
