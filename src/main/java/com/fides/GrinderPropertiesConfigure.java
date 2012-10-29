@@ -311,23 +311,11 @@ public abstract class GrinderPropertiesConfigure extends AbstractMojo {
 
 		for (final Iterator i = artifacts.iterator();  i.hasNext();) {
 			a = (Artifact) i.next();
-			try {
-				grinderJar = MavenUtilities.getPluginAbsolutePath(
-						a.getGroupId(),
-						a.getArtifactId(),
-						a.getVersion(),
-						a.getClassifier());
-				grinderJar = MavenUtilities.normalizePath(grinderJar);
-				pluginDependencies.append(grinderJar);
-				if (i.hasNext()) {
-					pluginDependencies.append(File.pathSeparator);
-				}
-			} catch (final FileNotFoundException e) {
-				logger.error("Unable to add artifact to classpath.", e);
-			} catch (final IOException e) {
-				logger.error("Unable to add artifact to classpath.", e);
-			} catch (final XmlPullParserException e) {
-				logger.error("Unable to add artifact to classpath.", e);
+
+			grinderJar = MavenUtilities.normalizePath(a.getFile().getPath());
+			pluginDependencies.append(grinderJar);
+			if (i.hasNext()) {
+				pluginDependencies.append(File.pathSeparator);
 			}
 		}
 
