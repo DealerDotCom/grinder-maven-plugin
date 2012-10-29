@@ -13,7 +13,7 @@
 	<properties>
 		<grinder.version>3.8</grinder.version>
 		<grinder.groovy.version>1.0.0-SNAPSHOT</grinder.groovy.version>
-		<groovy.version>2.0.0</groovy.version>
+		<groovy.version>2.0.5</groovy.version>
 		<jython.version>2.5.2</jython.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
