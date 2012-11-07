@@ -60,6 +60,12 @@
 			<groupId>com.dealer</groupId>
 			<artifactId>grinder-groovy</artifactId>
 			<version>${grinder.groovy.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>net.sf.grinder</groupId>
+					<artifactId>grinder-core</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 		<dependency>
