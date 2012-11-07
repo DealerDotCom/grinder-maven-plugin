@@ -166,8 +166,12 @@ class ResponseTimeGroupHandler:
             txName = self._txNumberNameMap[columns[TEST_NUMBER_COLUMN].strip()]
             #logger.info("Test %s rtime %f group %f" %(txName, rtimeSeconds, key))
             self._responseTimeGroups[txName][key] += 1
-        self._responseTimeGroups[ALL_TRANSACTIONS_VALUE][key] += 1
-
+        if self._responseTimeGroups[ALL_TRANSACTIONS_VALUE] is None:
+            self._responseTimeGroups[ALL_TRANSACTIONS_VALUE] = {}
+            self._responseTimeGroups[ALL_TRANSACTIONS_VALUE][key] = 1
+        else:
+            self._responseTimeGroups[ALL_TRANSACTIONS_VALUE][key] += 1        	
+		
     def getTxPercent(self, txName, maxTimeSec):
         txs = self._responseTimeGroups[txName][maxTimeSec]
         return txs / self._totalTxPassMap[txName]
