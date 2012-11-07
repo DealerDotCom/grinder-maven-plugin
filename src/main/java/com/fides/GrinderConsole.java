@@ -18,7 +18,6 @@ import net.grinder.common.GrinderException;
 import net.grinder.console.ConsoleFoundation;
 import net.grinder.console.common.Resources;
 import net.grinder.console.common.ResourcesImplementation;
-import net.grinder.console.swingui.ConsoleUI;
 import net.grinder.util.AbstractMainClass;
 
 import org.apache.maven.plugin.MojoExecutionException;
@@ -59,16 +58,10 @@ public class GrinderConsole extends GrinderPropertiesConfigure {
 
 		private final ConsoleFoundation m_consoleFoundation;
 
-		private Console(final Resources resources, final Logger logger)
-				throws GrinderException
-				{
+		private Console(final Resources resources, final Logger logger) throws GrinderException {
 			super(logger, USAGE);
-
-			final Class<? extends ConsoleFoundation.UI> ui = ConsoleUI.class;
-
-			m_consoleFoundation = new ConsoleFoundation(resources, logger);
-			m_consoleFoundation.createUI(ui);
-				}
+			m_consoleFoundation = new ConsoleFoundation(resources, logger, false);
+		}
 
 		private void run() {
 			m_consoleFoundation.run();

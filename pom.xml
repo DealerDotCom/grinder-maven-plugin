@@ -11,7 +11,7 @@
 	<url>http://maven.apache.org</url>
 
 	<properties>
-		<grinder.version>3.8</grinder.version>
+		<grinder.version>3.11</grinder.version>
 		<grinder.groovy.version>1.0.0-SNAPSHOT</grinder.groovy.version>
 		<groovy.version>2.0.5</groovy.version>
 		<jython.version>2.5.2</jython.version>
