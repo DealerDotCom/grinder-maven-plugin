@@ -22,6 +22,9 @@ import java.io.OutputStream;
 import java.util.jar.JarInputStream;
 import java.util.zip.ZipEntry;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Provide method to decompress jar files
  *
@@ -29,16 +32,21 @@ import java.util.zip.ZipEntry;
  */
 public final class FileUtil {
 
+	private static final Logger logger = LoggerFactory.getLogger(FileUtil.class);
+
 	private static final int BUFFER = 1024;
 
-	public static void unJarDirectory(final String in, final File fOut, final String directoryName)
-			throws IOException {
+	public static void unJarDirectory(final String in, final File fOut) throws IOException {
 		if (!fOut.exists()) {
 			fOut.mkdirs();
 		}
 		if (!fOut.isDirectory()) {
 			throw new IOException("Destination must be a directory.");
 		}
+		if(logger.isDebugEnabled()) {
+			logger.debug("Extracting Grinder Analyzer to " + fOut.getPath() + "...");
+		}
+
 		final JarInputStream jin = new JarInputStream(new FileInputStream(in));
 		final byte[] buffer = new byte[BUFFER];
 
@@ -55,30 +63,27 @@ public final class FileUtil {
 				fileName = fileName.replace('/', File.separatorChar);
 			}
 			final File file = new File(fOut, fileName);
-
-			if (entry.getName().contains(directoryName)) {
-				if (entry.isDirectory()) {
-					// make sure the directory exists
-					file.mkdirs();
-					jin.closeEntry();
-				} else {
-					// make sure the directory exists
-					final File parent = file.getParentFile();
-					if (parent != null && !parent.exists()) {
-						parent.mkdirs();
-					}
-
-					// dump the file
-					final OutputStream out = new FileOutputStream(file);
-					int len = 0;
-					while ((len = jin.read(buffer, 0, buffer.length)) != -1) {
-						out.write(buffer, 0, len);
-					}
-					out.flush();
-					out.close();
-					jin.closeEntry();
-					file.setLastModified(entry.getTime());
+			if (entry.isDirectory()) {
+				// make sure the directory exists
+				file.mkdirs();
+				jin.closeEntry();
+			} else {
+				// make sure the directory exists
+				final File parent = file.getParentFile();
+				if (parent != null && !parent.exists()) {
+					parent.mkdirs();
 				}
+
+				// dump the file
+				final OutputStream out = new FileOutputStream(file);
+				int len = 0;
+				while ((len = jin.read(buffer, 0, buffer.length)) != -1) {
+					out.write(buffer, 0, len);
+				}
+				out.flush();
+				out.close();
+				jin.closeEntry();
+				file.setLastModified(entry.getTime());
 			}
 			entry = jin.getNextEntry();
 		}

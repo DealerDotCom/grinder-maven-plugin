@@ -12,121 +12,119 @@
 
 	<properties>
 		<grinder.version>3.11</grinder.version>
+		<grinder.analyzer.version>2.0.0.b19</grinder.analyzer.version>
 		<grinder.groovy.version>1.0.0-SNAPSHOT</grinder.groovy.version>
-		<groovy.version>2.0.5</groovy.version>
 		<jython.version>2.5.2</jython.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
 
 	<dependencies>
-
-		<dependency>
-			<groupId>velocity</groupId>
-			<artifactId>velocity</artifactId>
-			<version>1.5</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.codehaus.groovy</groupId>
-			<artifactId>groovy-all</artifactId>
-			<version>${groovy.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.python</groupId>
-			<artifactId>jython-standalone</artifactId>
-			<version>${jython.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>jfree</groupId>
-			<artifactId>jfreechart</artifactId>
-			<version>1.0.13</version>
-		</dependency>
-
-		<dependency>
-			<groupId>log4j</groupId>
-			<artifactId>log4j</artifactId>
-			<version>1.2.16</version>
-		</dependency>
-
+		<!-- Grinder Dependencies -->
 		<dependency>
 			<groupId>net.sf.grinder</groupId>
-			<artifactId>grinder</artifactId>
+			<artifactId>grinder-core</artifactId>
 			<version>${grinder.version}</version>
 		</dependency>
-
+		<dependency>
+			<groupId>net.sf.grinder</groupId>
+			<artifactId>grinder-http</artifactId>
+			<version>${grinder.version}</version>
+		</dependency>		
+		<dependency>
+			<groupId>net.sf.grinder</groupId>
+			<artifactId>grinder-dcr-agent</artifactId>
+			<version>${grinder.version}</version>
+			<scope>runtime</scope>
+		</dependency>	
 		<dependency>
 			<groupId>com.dealer</groupId>
 			<artifactId>grinder-groovy</artifactId>
 			<version>${grinder.groovy.version}</version>
+			<scope>runtime</scope>
 			<exclusions>
 				<exclusion>
 					<groupId>net.sf.grinder</groupId>
 					<artifactId>grinder-core</artifactId>
 				</exclusion>
 			</exclusions>
+		</dependency>	
+		<dependency>
+			<groupId>net.sf.grinder</groupId>
+			<artifactId>grinder-analyzer</artifactId>
+			<version>${grinder.analyzer.version}</version>
+		</dependency>			
+		
+		<!-- Other dependencies -->
+		<dependency>
+			<groupId>org.picocontainer</groupId>
+			<artifactId>picocontainer</artifactId>
+			<version>2.13.6</version>
+		</dependency>
+		<dependency>
+			<groupId>org.python</groupId>
+			<artifactId>jython-standalone</artifactId>
+			<version>${jython.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>1.6.4</version>
+		</dependency>
+		<dependency>
+			<groupId>log4j</groupId>
+			<artifactId>log4j</artifactId>
+			<version>1.2.16</version>
+			<scope>runtime</scope>
 		</dependency>
 
+		<!-- Maven dependencies required to make this project a plugin  -->
 		<dependency>
 			<groupId>org.apache.maven</groupId>
-			<artifactId>maven-plugin-api</artifactId>
+			<artifactId>maven-artifact</artifactId>
 			<version>2.0</version>
-		</dependency>
-
+		</dependency>		
 		<dependency>
 			<groupId>org.apache.maven</groupId>
 			<artifactId>maven-core</artifactId>
 			<version>2.0</version>
 		</dependency>
-
 		<dependency>
 			<groupId>org.apache.maven.shared</groupId>
 			<artifactId>maven-filtering</artifactId>
 			<version>1.0</version>
 		</dependency>
-
+		<dependency>
+			<groupId>org.apache.maven</groupId>
+			<artifactId>maven-model</artifactId>
+			<version>2.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.maven</groupId>
+			<artifactId>maven-plugin-api</artifactId>
+			<version>2.0</version>
+		</dependency>		
+		<dependency>
+			<groupId>org.apache.maven</groupId>
+			<artifactId>maven-project</artifactId>
+			<version>2.0</version>
+		</dependency>		
+		<dependency>
+			<groupId>org.apache.maven</groupId>
+			<artifactId>maven-settings</artifactId>
+			<version>2.0</version>
+		</dependency>			
 		<dependency>
 			<groupId>org.codehaus.plexus</groupId>
 			<artifactId>plexus-utils</artifactId>
 			<version>1.5.15</version>
 		</dependency>
 
+		<!-- Test dependencies -->
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
 			<version>3.8.1</version>
 			<scope>test</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>commons-io</groupId>
-			<artifactId>commons-io</artifactId>
-			<version>2.0.1</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.htmlparser</groupId>
-			<artifactId>htmllexer</artifactId>
-			<version>2.1</version>
-			<exclusions>
-				<exclusion>
-					<groupId>com.sun</groupId>
-					<artifactId>tools</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-
-		<dependency>
-			<groupId>nu.validator.htmlparser</groupId>
-			<artifactId>htmlparser</artifactId>
-			<version>1.2.1</version>
-		</dependency>
-
-		<dependency>
-			<groupId>jfree</groupId>
-			<artifactId>jcommon</artifactId>
-			<version>1.0.12</version>
 		</dependency>
 
 	</dependencies>

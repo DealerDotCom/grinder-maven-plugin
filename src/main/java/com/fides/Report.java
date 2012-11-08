@@ -15,15 +15,19 @@
 package com.fides;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FilenameFilter;
 import java.io.IOException;
-import java.io.InputStream;
+import java.util.List;
 import java.util.Properties;
+import java.util.regex.Pattern;
 
+import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
-import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
+import org.jtmb.grinderAnalyzer.MDC;
+import org.python.core.PyString;
+import org.python.core.PySystemState;
 import org.python.util.PythonInterpreter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,11 +40,21 @@ import org.slf4j.LoggerFactory;
  * @author Giuseppe Iacono
  */
 public class Report extends GrinderPropertiesConfigure {
-	// unjar directory
-	private static final String JYTHON_DIR = "jython";
 
-	// Grinder Analyzer
-	private static final String JYTHON_FILE_NAME = "analyzer.py";
+	// The Maven artifact ID of the Grinder Analyzer project
+	private static final String ANALYZER_ARTIFACT_ID = "grinder-analyzer";
+
+	// The name of the analyzer directory found in classpathtool.py in the Grinder Analyzer project.
+	private static final String ANALYZER_DIR = "GrinderAnalyzer";
+
+	// Grinder Analyzer main Python script file name.
+	private static final String ANALYZER_FILE_NAME = "analyzer.py";
+
+	// Regular expression used to find the Gridner data log file.
+	private static final Pattern DATA_LOG_FILE_REGEX = Pattern.compile(".*-\\d+-data\\.log");
+
+	// Regular expression used to find the Grinder mapping log file.
+	private static final Pattern MAPPING_LOG_FILE_REGEX = Pattern.compile(".*-\\d+\\.log");
 
 	// Report logger
 	private final Logger logger = LoggerFactory.getLogger(Report.class);
@@ -52,12 +66,8 @@ public class Report extends GrinderPropertiesConfigure {
 		super();
 	}
 
-	public static String getJythonDir() {
-		return JYTHON_DIR;
-	}
-
-	public static String getJythonFileName() {
-		return JYTHON_FILE_NAME;
+	public static String getAnalyzerFileName() {
+		return ANALYZER_FILE_NAME;
 	}
 
 	@Override
@@ -68,109 +78,124 @@ public class Report extends GrinderPropertiesConfigure {
 	/**
 	 * Create HTML reports of LOG_DIRECTORY's file
 	 */
-	private void jythonInterpreter() {
-		// Maven repository
-		final String currentDir = getCurrentDir();
-
-		final String analyzerPyFile = currentDir + File.separator + JYTHON_FILE_NAME;
-
-		InputStream stream1 = null;
-
+	private void jythonInterpreter() throws MojoExecutionException {
 		try {
-			stream1 = new FileInputStream(analyzerPyFile);
+			final String currentDir = getCurrentDir();
+			final String analyzerPyFile = currentDir + File.separator + ANALYZER_FILE_NAME;
+
+			// create cache directory
+			final Properties propertiesJython = new Properties();
+			propertiesJython.put("python.cachedir",System.getProperty("java.io.tmpdir"));
+			PythonInterpreter.initialize(System.getProperties(),propertiesJython, new String[0] );
+
+			// Add some additional variables to the MDC for use in the Python scripts.
+			MDC.put("current.dir", new PyString(currentDir));
+			if(getAnalyzerProperties() != null) {
+				MDC.put("user.analyzer.config", new PyString(getAnalyzerProperties()));
+			}
+
+			// Add the argv values needed to run the analyzer script.
+			final PySystemState sys = new PySystemState();
+			sys.argv.append(new PyString(analyzerPyFile));
+			sys.argv.append(new PyString(getLogFile(DATA_LOG_FILE_REGEX)));
+			sys.argv.append(new PyString(getLogFile(MAPPING_LOG_FILE_REGEX)));
+			sys.argv.append(new PyString("1"));	// 1 agent
+
+			// Add the Maven dependencies to the Python path so that the modules can be used by the scripts.
+			for(final String dependency : getPropertiesPlugin().getProperty(GRINDER_JVM_CLASSPATH).split(File.pathSeparator)) {
+				sys.path.append(new PyString(dependency));
+			}
+
+			// Create the Python interpreter
+			final PythonInterpreter interp = new PythonInterpreter(null, sys);
+
+			// Execute the Grinder Analyzer script
+			interp.execfile(analyzerPyFile);
 		} catch (final FileNotFoundException e) {
-			logger.error("Analyzer Python file not found.", e);
+			throw new MojoExecutionException("Unable to set up Jython interpreter.", e);
+		}
+	}
+
+	/**
+	 * Finds the log file from the log directory using the provided regular expression.
+	 * @param pattern A regular expression used to find a log file.
+	 * @return The matching log file path or an empty string if no match could be found.
+	 */
+	private String getLogFile(final Pattern pattern) {
+		final File logDirectory = new File(getLOG_DIRECTORY());
+		final File[] logFiles = logDirectory.listFiles(new FilenameFilter() {
+
+			@Override
+			public boolean accept(final File dir, final String name) {
+				return pattern.matcher(name).matches();
+			}
+		});
+		return logFiles.length > 0 ? logFiles[0].getPath() : "";
+	}
+
+	/**
+	 * Returns the absolute path to the Grinder Analyzer dependency resolved by Maven.
+	 * @return The absolute path to the Grinder Analyzer dependency or {@code null}
+	 * 	if the dependency cannot be found.
+	 */
+	private String getAnalyzerPath() {
+		final List<Artifact> artifacts = getPluginArtifacts();
+
+		for(final Artifact artifact : artifacts) {
+			if(ANALYZER_ARTIFACT_ID.equals(artifact.getArtifactId())) {
+				return MavenUtilities.normalizePath(artifact.getFile().getPath());
+			}
 		}
 
-		if(logger.isDebugEnabled()) {
-			logger.debug("Try to find the file " + analyzerPyFile);
-		}
-
-		// create cache directory
-		final Properties propertiesJython = new Properties();
-		propertiesJython.put("python.cachedir",System.getProperty("java.io.tmpdir"));
-		propertiesJython.put("os.path.curdir" , "'" + currentDir + "'");
-
-		PythonInterpreter.initialize(System.getProperties(),propertiesJython, null );
-
-		// create python interpreter
-		final PythonInterpreter interp = new PythonInterpreter();
-
-		if(logger.isDebugEnabled()) {
-			logger.debug("fullCurrentDir = {}",  currentDir);
-		}
-
-		interp.exec("import sys");
-		interp.exec("sys.path.append(\"" + currentDir + "\")");
-		interp.exec("sys.path.append(\"" + currentDir + File.separator + "lib\")");
-
-		interp.execfile(stream1, JYTHON_FILE_NAME);
+		return null;
 	}
 
 	/**
 	 * @return the absolute path of unjar directory
 	 */
-	private String getCurrentDir() {
-		final InputStream mavenProperties = this.getClass().getClassLoader().getResourceAsStream("grinderplugin.properties");
-
-		final Properties propertiesMaven = new Properties();
-
-		try {
-			propertiesMaven.load(mavenProperties);
-			mavenProperties.close();
-		} catch (final IOException e) {
-			logger.error("Unable to load Maven properties.", e);
-		}
-
-		final String groupId = propertiesMaven.getProperty("grinderplugin.project.groupId");
-		final String artifactId = propertiesMaven.getProperty("grinderplugin.project.artifactId");
-		final String version = propertiesMaven.getProperty("grinderplugin.project.version");
-
-		String jarPath = null;
-
-		try {
-			jarPath = MavenUtilities.getPluginAbsolutePath(groupId, artifactId, version, null);
-		} catch (final FileNotFoundException e) {
-			logger.error("Unable to get current directory.", e);
-		} catch (final IOException e) {
-			logger.error("Unable to get current directory.", e);
-		} catch (final XmlPullParserException e) {
-			logger.error("Unable to get current directory.", e);
-		}
-
-		logger.debug("Jar Absolute Path: {}", jarPath);
-
-		final String directory = MavenUtilities.getCurrentDir();
-
-		final File jar_directory = new File(directory);
-
-		// Delete the last unjar directory
-		if (jar_directory.exists()){
-			jar_directory.delete();
-		}
-
-		// make sure the jar_directory exists
-		if (jar_directory != null) {
-			jar_directory.mkdirs();
-		}
-
-		jar_directory.setExecutable(true);
-		jar_directory.setWritable(true);
-		jar_directory.setReadable(true);
-
-		// extract jarpath file to jar_directory/JYTHON_DIR
-		try {
-			FileUtil.unJarDirectory(jarPath, jar_directory, JYTHON_DIR);
-		} catch (final IOException e) {
-			logger.error("Unable to delete jython JAR file.", e);
-		}
+	private String getCurrentDir() throws FileNotFoundException {
+		final String pathToAnalyzer = getAnalyzerPath();
 
 		if(logger.isDebugEnabled()) {
-			logger.debug("unjar: {}", jar_directory);
+			logger.debug("Jar Absolute Path: {}", pathToAnalyzer);
 		}
 
-		return jar_directory + File.separator + JYTHON_DIR;
+		if(pathToAnalyzer != null) {
+			final String directory = MavenUtilities.getCurrentDir() + File.separator + ANALYZER_DIR;
+
+			final File jar_directory = new File(directory);
+
+			// Delete the last unjar directory
+			if (jar_directory.exists()){
+				jar_directory.delete();
+			}
+
+			// make sure the jar_directory exists
+			if (jar_directory != null) {
+				jar_directory.mkdirs();
+			}
+
+			jar_directory.setExecutable(true);
+			jar_directory.setWritable(true);
+			jar_directory.setReadable(true);
+
+			// extract jarpath file to jar_directory/JYTHON_DIR
+			try {
+				FileUtil.unJarDirectory(pathToAnalyzer, jar_directory);
+			} catch (final IOException e) {
+				logger.error("Unable to delete jython JAR file.", e);
+			}
+
+			if(logger.isDebugEnabled()) {
+				logger.debug("unjar: {}", jar_directory);
+			}
+
+			return jar_directory.getPath();
+		} else {
+			throw new FileNotFoundException("Could not extract Grinder analyzer:  dependency not found!");
+		}
 	}
+
 	@Override
 	public void execute() {
 		final File logDir = new File(getLOG_DIRECTORY());
@@ -209,13 +234,12 @@ public class Report extends GrinderPropertiesConfigure {
 
 		try {
 			super.execute();
+			jythonInterpreter();
 		} catch (final MojoExecutionException e) {
 			logger.error("Failed to execute Grinder Maven goal.", e);
 		} catch (final MojoFailureException e) {
 			logger.error("Failed to execute Grinder Maven goal.", e);
 		}
-
-		jythonInterpreter();
 	}
 }
 

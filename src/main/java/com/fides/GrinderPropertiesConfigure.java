@@ -21,6 +21,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
@@ -51,6 +52,9 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class GrinderPropertiesConfigure extends AbstractMojo {
 
+	// Grinder JVM classpath system property name constant.
+	protected static final String GRINDER_JVM_CLASSPATH = "grinder.jvm.classpath";
+
 	// default agent
 	private static final boolean DEFAULT_DAEMON_OPTION = false;
 
@@ -77,6 +81,8 @@ public abstract class GrinderPropertiesConfigure extends AbstractMojo {
 
 	// grinder properties file path
 	private String pathProperties = null;
+
+	private String analyzerProperties = null;
 
 	// Test path
 	private String test = null;
@@ -233,6 +239,14 @@ public abstract class GrinderPropertiesConfigure extends AbstractMojo {
 		this.pathProperties = pathProperties;
 	}
 
+	public String getAnalyzerProperties() {
+		return analyzerProperties;
+	}
+
+	public void setAnalyzerProperties(final String analyzerProperties) {
+		this.analyzerProperties = analyzerProperties;
+	}
+
 	public String getTest() {
 		return test;
 	}
@@ -319,7 +333,7 @@ public abstract class GrinderPropertiesConfigure extends AbstractMojo {
 			}
 		}
 
-		propertiesPlugin.setProperty("grinder.jvm.classpath", pluginDependencies.toString());
+		propertiesPlugin.setProperty(GRINDER_JVM_CLASSPATH, pluginDependencies.toString());
 	}
 
 	/**
@@ -327,68 +341,30 @@ public abstract class GrinderPropertiesConfigure extends AbstractMojo {
 	 */
 	private void initPropertiesFile() {
 		if (path == null) {		// try to find grinder properties file in the PATH_PROPERTIES_DIR
-
-			final File[] config = new File(PATH_PROPERTIES_DIR).listFiles();
-
-			if (config == null) {
-				if(logger.isDebugEnabled()){
-					logger.error("");
-					logger.error(" ----------------------------");
-					logger.error("|   Configuration ERROR!!!   |");
-					logger.error(" ----------------------------");
-					logger.error("");
-					logger.error(" Configuration directory " + PATH_PROPERTIES_DIR + " do not exists!        ");
-					logger.error("");
-					logger.error(" Create this directory to configure grinder properties file. ");
-					System.exit(0);
+			final File[] configFiles = new File(PATH_PROPERTIES_DIR).listFiles(new FilenameFilter() {
+				@Override
+				public boolean accept(final File dir, final String name) {
+					return name.endsWith(".properties");
 				}
+			});
+
+			if(configFiles.length == 0) {
+				logger.error(PATH_PROPERTIES_DIR + " must at least contain a grinder.properties file!");
+				System.exit(-1);
 			}
 
-			if (config.length == 0) {
-				if(logger.isDebugEnabled()){
-					logger.error("");
-					logger.error(" ----------------------------");
-					logger.error("|   Configuration ERROR!!!   |");
-					logger.error(" ----------------------------");
-					logger.error("");
-					logger.error(" " + PATH_PROPERTIES_DIR + " is empty! ");
-					logger.error("");
-					logger.error(" Copy grinder properties file in this directory  ");
-					logger.error(" or set <path> from POM file. ");
-					System.exit(0);
-				}
+			if(configFiles.length > 2) {
+				logger.error(PATH_PROPERTIES_DIR + " must contain no more than one grinder.properties file and one analyzer.properties file!");
+				System.exit(-1);
 			}
 
-			if (config.length > 1) {
-				if(logger.isDebugEnabled()){
-					logger.error("");
-					logger.error(" ----------------------------");
-					logger.error("|   Configuration ERROR!!!   |");
-					logger.error(" ----------------------------");
-					logger.error("");
-					logger.error(" " + PATH_PROPERTIES_DIR + " contain other files ");
-					logger.error(" beyond the grinder properties file! ");
-					System.exit(0);
+			for(final File propertyFile : configFiles) {
+				if(propertyFile.getName().equals("grinder.properties")) {
+					setPathProperties(PATH_PROPERTIES_DIR + File.separator + propertyFile.getName());
+				} else if(propertyFile.getName().equals("analyzer.properties")) {
+					setAnalyzerProperties(PATH_PROPERTIES_DIR + File.separator + propertyFile.getName());
 				}
 			}
-
-			final String properties = config[0].getName();
-
-			if (!properties.endsWith(".properties")) {
-				if(logger.isDebugEnabled()){
-					logger.error("");
-					logger.error(" ----------------------------");
-					logger.error("|   Configuration ERROR!!!   |");
-					logger.error(" ----------------------------");
-					logger.error("");
-					logger.error(" " + PATH_PROPERTIES_DIR + "/" + properties  + " is not a grinder properties file! ");
-					logger.error("");
-					logger.error(" The extension of file must be .properties ");
-					System.exit(0);
-				}
-			}
-			final String pathProp = PATH_PROPERTIES_DIR + File.separator + properties;
-			setPathProperties(pathProp);
 		} else {
 			setPathProperties(path);
 		}
