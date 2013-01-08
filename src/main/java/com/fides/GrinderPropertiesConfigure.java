@@ -24,7 +24,6 @@ import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -293,6 +292,7 @@ public abstract class GrinderPropertiesConfigure extends AbstractMojo {
 	private void setAgentJVMArg() {
 		try {
 			final List<Artifact> artifacts = new ArrayList<Artifact>();
+
 			if(includeProjectDependencies) {
 				artifacts.addAll(mavenProject.getArtifacts());
 			} else {
@@ -334,12 +334,19 @@ public abstract class GrinderPropertiesConfigure extends AbstractMojo {
 		}
 	}
 
-	@SuppressWarnings("rawtypes")
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private void setClassPath() {
 		Artifact a = null;
-		final Collection artifacts = pluginArtifacts;
 		final StringBuffer pluginDependencies = new StringBuffer();
 		String grinderJar = null;
+
+		final List<Artifact> artifacts = new ArrayList<Artifact>();
+
+		if(includeProjectDependencies) {
+			artifacts.addAll(mavenProject.getArtifacts());
+		} else {
+			artifacts.addAll(pluginArtifacts);
+		}
 
 		for (final Iterator i = artifacts.iterator();  i.hasNext();) {
 			a = (Artifact) i.next();
