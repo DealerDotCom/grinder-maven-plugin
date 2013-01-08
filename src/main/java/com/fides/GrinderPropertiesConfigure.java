@@ -23,6 +23,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -179,6 +180,14 @@ public abstract class GrinderPropertiesConfigure extends AbstractMojo {
 	private List<?> buildFilters;
 
 	/**
+	 * Indicates if the project dependencies should be used when executing
+     * the main class.
+	 * @parameter expression="${includeProjectDependencies}" default-value="true"
+	 * @since 2.4
+	 */
+	private boolean includeProjectDependencies;
+
+	/**
 	 * @parameter default-value="true"
 	 */
 	private boolean filteringEnabled;
@@ -279,9 +288,16 @@ public abstract class GrinderPropertiesConfigure extends AbstractMojo {
 		return logger;
 	}
 
+	@SuppressWarnings("unchecked")
 	private void setAgentJVMArg() {
 		try {
-			for (final Artifact a : pluginArtifacts) {
+			final List<Artifact> artifacts = new ArrayList<Artifact>();
+			if(includeProjectDependencies) {
+				artifacts.addAll(mavenProject.getArtifacts());
+			}
+			artifacts.addAll(pluginArtifacts);
+
+			for (final Artifact a : artifacts) {
 				if(a.getArtifactId().startsWith("grinder-dcr-agent")) {
 					String agentJarPath;
 					agentJarPath = MavenUtilities.normalizePath(
