@@ -50,6 +50,7 @@ import org.slf4j.LoggerFactory;
  * Provide methods to configure the plug-in
  *
  * @author Giuseppe Iacono
+ * @requiresDependencyResolution test
  */
 public abstract class GrinderPropertiesConfigure extends AbstractMojo {
 
@@ -294,8 +295,9 @@ public abstract class GrinderPropertiesConfigure extends AbstractMojo {
 			final List<Artifact> artifacts = new ArrayList<Artifact>();
 			if(includeProjectDependencies) {
 				artifacts.addAll(mavenProject.getArtifacts());
+			} else {
+				artifacts.addAll(pluginArtifacts);
 			}
-			artifacts.addAll(pluginArtifacts);
 
 			for (final Artifact a : artifacts) {
 				if(a.getArtifactId().startsWith("grinder-dcr-agent")) {
