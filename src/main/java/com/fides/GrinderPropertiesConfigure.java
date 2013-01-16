@@ -357,6 +357,8 @@ public abstract class GrinderPropertiesConfigure extends AbstractMojo {
 				pluginDependencies.append(File.pathSeparator);
 			}
 		}
+		pluginDependencies.append(File.pathSeparator);
+		pluginDependencies.append(mavenProject.getBuild().getOutputDirectory());
 
 		propertiesPlugin.setProperty(GRINDER_JVM_CLASSPATH, pluginDependencies.toString());
 	}
